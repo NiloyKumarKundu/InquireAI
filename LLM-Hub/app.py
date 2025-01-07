@@ -1,6 +1,5 @@
 import streamlit as st
 from ollama import chat
-from ollama import ChatResponse
 
 
 # Streamlit app
