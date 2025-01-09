@@ -5,26 +5,34 @@ networks:
     driver: bridge
 
 services:
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    container_name: nginx-proxy
+    ports:
+      - "80:80" # Expose Nginx on port 80
+      - "443:443" # Expose Nginx on port 443 for HTTPS
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro # Required for automatic configuration
+    networks:
+      - llm_network
+
   app:
     build:
       context: ./LLM-Hub
-    ports:
-      - "8501:8501"
-    depends_on:
-      - ollama
-    volumes:
-      - ./LLM-Hub:/app
+    expose:
+      - "8501" # Expose the internal app port for Nginx
     environment:
       - STREAMLIT_SERVER_ADDRESS=0.0.0.0
       - STREAMLIT_SERVER_PORT=8501
+      - VIRTUAL_HOST=localhost # Hostname for this app
     networks:
       - llm_network
 
   ollama:
-    image: ollama/ollama:latest # Use the official Ollama image, adjust the tag if necessary
+    image: ollama/ollama:latest
     container_name: ollama
     ports:
-      - "11435:11434" # Change port if needed
+      - "11435:11434"
     runtime: nvidia
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
