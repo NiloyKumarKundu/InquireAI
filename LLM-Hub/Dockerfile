@@ -19,4 +19,4 @@ COPY . /app/
 EXPOSE 8501
 
 # Command to run the Streamlit app
-CMD ["streamlit", "run", "app.py", "--server.address=192.168.0.111"]
+CMD ["streamlit", "run", "app.py"]

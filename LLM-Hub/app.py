@@ -1,7 +1,13 @@
 import streamlit as st
-from ollama import chat
-import random
-import time
+from ollama import Client
+
+
+client = Client(
+  host='http://ollama:11434',
+)
+
+print("Client loaded")
+
 
 # Streamlit app
 st.title("Multi-Model LLM Question Answering App")
@@ -12,7 +18,8 @@ Choose from the available models, ask a question, and compare the answers!
 
 # Sidebar for model selection
 available_models = ["llama3.2", "smollm2", "mistral"]  # Update with your models
-selected_model = st.sidebar.selectbox("Choose Model", available_models, placeholder="Choose an option", index=0)
+selected_model = st.sidebar.selectbox("Choose Model", available_models, placeholder="Choose an option", index=1)
+print(selected_model)
 
 # Initialize chat history
 if "messages" not in st.session_state:
@@ -31,12 +38,14 @@ if prompt := st.chat_input("What is up?"):
     with st.chat_message("user"):
         st.markdown(prompt)
     
+    print("Passing to model: ", selected_model)
     # Start the stream for assistant's response
-    stream = chat(
+    stream = client.chat(
         model=selected_model,
         messages=[{'role': 'user', 'content': prompt}],
         stream=True,
     )
+    print(stream)
     
     # Display assistant response in chat message container
     with st.chat_message("assistant"):
@@ -44,6 +53,7 @@ if prompt := st.chat_input("What is up?"):
         response_placeholder = st.empty()  # Placeholder for the streaming response
         
         for chunk in stream:
+            print(chunk)
             response_text += chunk['message']['content']
             response_placeholder.markdown(response_text)  # Update the placeholder with new content
 
