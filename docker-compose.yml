@@ -17,7 +17,6 @@ services:
     environment:
       - STREAMLIT_SERVER_ADDRESS=0.0.0.0
       - STREAMLIT_SERVER_PORT=8501
-      # - OLLAMA_HOST=http://0.0.0.0:11435
     networks:
       - llm_network
 
@@ -32,7 +31,5 @@ services:
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     volumes:
       - ./ollama:/root/.ollama
-      # - ./models:/root/.ollama/models
-    # command: ["ollama", "run", "llama3.2"]
     networks:
       - llm_network
