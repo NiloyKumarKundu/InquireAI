@@ -174,3 +174,4 @@ cython_debug/
 # Custom
 ollama/
 models/
+nginx/
