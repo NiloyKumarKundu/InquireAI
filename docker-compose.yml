@@ -13,31 +13,36 @@ services:
       - "443:443" # Expose Nginx on port 443 for HTTPS
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro # Required for automatic configuration
+      - ${NGINX_SSL_PATH}:/etc/nginx/certs:ro # Path to SSL certificate
+      - ${NGINX_LOGS_PATH}:/var/log/nginx # Mount Nginx logs directory
     networks:
       - llm_network
 
   app:
     build:
       context: ./LLM-Hub
-    expose:
-      - "8501" # Expose the internal app port for Nginx
     environment:
-      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
-      - STREAMLIT_SERVER_PORT=8501
-      - VIRTUAL_HOST=localhost # Hostname for this app
+      - STREAMLIT_SERVER_ADDRESS=${STREAMLIT_SERVER_ADDRESS}
+      - STREAMLIT_SERVER_PORT=${STREAMLIT_SERVER_PORT}
+      - VIRTUAL_HOST=${VIRTUAL_HOST} # Set the virtual host for Nginx to route traffic
+    volumes:
+      - ${APP_LOGS_PATH}:/app/logs # Mount logs directory to persist logs
     networks:
       - llm_network
+    depends_on:
+      - nginx-proxy
+      - ollama
 
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
-    ports:
-      - "11435:11434"
     runtime: nvidia
     environment:
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES}
+      - NVIDIA_DRIVER_CAPABILITIES=${NVIDIA_DRIVER_CAPABILITIES}
     volumes:
-      - ./ollama:/root/.ollama
+      - ${OLLAMA_CONFIG_PATH}:/root/.ollama # Persist Ollama configuration
     networks:
       - llm_network
+    depends_on:
+      - nginx-proxy
