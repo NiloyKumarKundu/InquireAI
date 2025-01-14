@@ -13,43 +13,35 @@ services:
       - "443:443" # Expose Nginx on port 443 for HTTPS
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro # Required for automatic configuration
-      - ${SSL_CERTIFICATE}:/etc/nginx/certs/mlhub.space.crt # Path to SSL certificate
-      - ${SSL_KEY}:/etc/nginx/certs/mlhub.space.key
-    environment:
-      - ENABLE_SSL=true # Enables SSL in the proxy
-      - SSL_CERT_PATH=/etc/nginx/certs/mlhub.space.crt # Path to SSL certificate
-      - SSL_KEY_PATH=/etc/nginx/certs/mlhub.space.key # Path to SSL key
-      - FORCE_HTTPS=true # Redirects all HTTP traffic to HTTPS
+      - ${NGINX_SSL_PATH}:/etc/nginx/certs:ro # Path to SSL certificate
+      - ${NGINX_LOGS_PATH}:/var/log/nginx # Mount Nginx logs directory
     networks:
       - llm_network
 
   app:
     build:
       context: ./LLM-Hub
-    expose:
-      - "${STREAMLIT_SERVER_PORT}" # Expose the internal app port for Nginx
     environment:
       - STREAMLIT_SERVER_ADDRESS=${STREAMLIT_SERVER_ADDRESS}
       - STREAMLIT_SERVER_PORT=${STREAMLIT_SERVER_PORT}
-      - VIRTUAL_HOST=${VIRTUAL_HOST}
+      - VIRTUAL_HOST=${VIRTUAL_HOST} # Set the virtual host for Nginx to route traffic
     volumes:
-      - ${LOGS_DIR}:/app/logs # Mount logs directory to persist logs
+      - ${APP_LOGS_PATH}:/app/logs # Mount logs directory to persist logs
     networks:
       - llm_network
     depends_on:
       - nginx-proxy
+      - ollama
 
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
-    ports:
-      - "11435:11434"
     runtime: nvidia
     environment:
       - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES}
       - NVIDIA_DRIVER_CAPABILITIES=${NVIDIA_DRIVER_CAPABILITIES}
     volumes:
-      - ${OLLAMA_DIR}:/root/.ollama
+      - ${OLLAMA_CONFIG_PATH}:/root/.ollama # Persist Ollama configuration
     networks:
       - llm_network
     depends_on:

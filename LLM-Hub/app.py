@@ -3,6 +3,9 @@ from ollama import Client
 import logging
 from datetime import datetime
 import os
+import ssl
+
+ssl._create_default_https_context = ssl._create_unverified_context
 
 # Set up logging
 log_dir = "/app/logs"
