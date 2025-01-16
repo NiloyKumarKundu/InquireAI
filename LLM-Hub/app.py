@@ -4,6 +4,7 @@ import logging
 from datetime import datetime
 import os
 import ssl
+import time
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -68,18 +69,34 @@ if prompt := st.chat_input("What is up?"):
         st.markdown(prompt)
     
     try:
-        # Start the stream for assistant's response
-        stream = client.chat(
-            model=selected_model,
-            messages=[{'role': 'user', 'content': prompt}],
-            stream=True,
-        )
-        logging.info(f"Chat request sent to model: {selected_model}")
+        # Show status updates while processing
+        # with st.status("Sending request...", expanded=True, state="running") as status:
+        #     status.write("Searching for model...")
+        #     time.sleep(1)  # Simulate waiting for the model
+        with st.chat_message("assistant"):
+            status = st.empty()
+            status.status("Sending request...", state="running")
+            time.sleep(1)  # Simulate waiting for the model
+            
+            # Start the stream for assistant's response
+            stream = client.chat(
+                model=selected_model,
+                messages=[{'role': 'user', 'content': prompt}],
+                stream=True,
+            )
+            logging.info(f"Chat request sent to model: {selected_model}")
+            
+            # Display status update while receiving the response
+            status.write("Receiving response...")
+            
+            # Update status to "Complete" after the response is received
+            status.update(label="Response complete!", state="complete")
+            time.sleep(1)  # Simulate waiting for the response
         
         # Display assistant response in chat message container
-        with st.chat_message("assistant"):
+        
             response_text = ""
-            response_placeholder = st.empty()  # Placeholder for the streaming response
+            response_placeholder = status.empty()  # Placeholder for the streaming response
             
             for chunk in stream:
                 response_text += chunk['message']['content']
