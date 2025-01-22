@@ -78,23 +78,27 @@ if prompt := st.chat_input("What is up?"):
             status.status("Sending request...", state="running")
             time.sleep(1)  # Simulate waiting for the model
             
+            # Handle Conversation History
+            conversation_history = ""
+            for message in st.session_state.messages:
+                conversation_history += f"{message['role']}: {message['content']} \n"
+            
             # Start the stream for assistant's response
             stream = client.chat(
                 model=selected_model,
-                messages=[{'role': 'user', 'content': prompt}],
+                messages=[{'role': 'user', 'content': conversation_history}],
                 stream=True,
             )
             logging.info(f"Chat request sent to model: {selected_model}")
             
             # Display status update while receiving the response
-            status.write("Receiving response...")
+            status.status("Receiving response...")
             
             # Update status to "Complete" after the response is received
-            status.update(label="Response complete!", state="complete")
+            status.status(label="Response complete!", state="complete")
             time.sleep(1)  # Simulate waiting for the response
         
-        # Display assistant response in chat message container
-        
+            # Display assistant response in chat message container
             response_text = ""
             response_placeholder = status.empty()  # Placeholder for the streaming response
             
@@ -102,9 +106,11 @@ if prompt := st.chat_input("What is up?"):
                 response_text += chunk['message']['content']
                 response_placeholder.markdown(response_text)  # Update the placeholder with new content
         
-        # Add assistant response to chat history
+        # Add assistant response to chat & conversation history
+        conversation_history += f"'assistant': {response_text} \n"
         st.session_state.messages.append({"role": "assistant", "content": response_text})
         logging.info(f"Model response received: {response_text}")
+        logging.info(f"Conversation history: {conversation_history}")
 
     except Exception as e:
         logging.error(f"Error during model interaction: {e}")

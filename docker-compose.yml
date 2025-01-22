@@ -2,6 +2,7 @@ version: "3.8"
 
 networks:
   llm_network:
+    name: llm_network
     driver: bridge
 
 services:
