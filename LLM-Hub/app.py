@@ -40,8 +40,8 @@ Choose from the available models, ask a question, and compare the answers!
 """)
 
 # Sidebar for model selection
-available_models = ["llama3.2", "smollm2", "mistral", "deepseek-v3"]  # Update with your models
-selected_model = st.sidebar.selectbox("Choose Model", available_models, placeholder="Choose an option", index=0)
+available_models = ["llama3.2", "smollm2", "mistral", "deepseek-v3", "deepseek-r1"]  # Update with your models
+selected_model = st.sidebar.selectbox("Choose Model", available_models, placeholder="Choose an option", index=4)
 
 if selected_model == "deepseek-v3":
     selected_model = "nezahatkorkmaz/deepseek-v3"
