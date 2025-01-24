@@ -7,10 +7,30 @@ import ssl
 import time
 # from langchain_ollama.llms import OllamaLLM
 from langchain_ollama.chat_models import ChatOllama
-from langchain_core.messages import AIMessage
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.chat_history import InMemoryChatMessageHistory
+from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_core.messages import trim_messages
+from operator import itemgetter
+from langchain_core.runnables import RunnablePassthrough
+from dotenv import load_dotenv
+
+load_dotenv()
+
+os.environ["LANGSMITH_API_KEY"] = os.getenv("LANGSMITH_API_KEY")
+os.environ['LANGCHAIN_TRACING_V2'] = "true"
 
 # ssl._create_default_https_context = ssl._create_unverified_context
 
+store = {}
+config = {
+    'configurable': {
+        'session_id': 'first_chat'
+    }
+}
+# messages = []
 
 
 # Set up logging
@@ -23,48 +43,90 @@ def set_log():
         level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s",
     )
+    
+def get_session_history(session_id: str) -> BaseChatMessageHistory:
+    if session_id not in store:
+        store[session_id] = InMemoryChatMessageHistory()
+    return store[session_id]
 
-# Log app start
-# logging.info("Streamlit app started.")
+def get_prompt():
+    prompt_template = ChatPromptTemplate([
+        ("system", "You are a chatbot name MLHub.space. Answer all questions to the best of your ability."),
+        ('human', 'What is up?'),
+        ('assistant','I am a chatbot. I am here to help you. How can I help you today?'),
+        MessagesPlaceholder(variable_name='messages'),
+    ])
+    return prompt_template
 
-# # Ollama Client
-# try:
-#     client = Client(host='http://ollama:11434')
-#     logging.info("Ollama client initialized successfully.")
-# except Exception as e:
-#     logging.error(f"Failed to initialize Ollama client: {e}")
-#     st.error("Failed to initialize LLM client. Please check the logs for details.")
-#     st.stop()
 
 
 def get_model():
     # Load the model
     try:
         llm = ChatOllama(
-            model="llama3.2"
+            model="llama3.2",
+            convert_system_message_to_human=True
         )
         return llm
     except Exception as e:
         logging.error(f"Failed to load model: {e}")
         print("error")
-        
-def run():
+
+def get_trimmer():
+    trimmer = trim_messages(
+        max_tokens=1024,
+        strategy="last",
+        token_counter=get_model(),
+        include_system=True,
+        allow_partial=False,
+        start_on='human'
+    )
+    
+    return trimmer
+
+
+def get_chain():
     llm = get_model()
-    messages = [
-        (
-            "system",
-            "You are a helpful assistant that translates English to French. Translate the user sentence.",
-        ),
-        ("human", "I love programming."),
-    ]
-    ai_msg = llm.invoke(messages)
-    print(ai_msg)
+    output_parser = StrOutputParser()
+    prompt = get_prompt()
+    trimmer = get_trimmer()
+    
+    chain = (
+        RunnablePassthrough.assign(messages=itemgetter("messages") | trimmer) | 
+        prompt | 
+        llm | 
+        output_parser
+        )
+    return chain
+
+        
+
+def pipeline():
+    while True:    
+        user_input = input("Write here...\n")
+        if user_input == "exit":
+            break
+        
+        chain = get_chain()
+        
+        # response = chain.invoke({'messages':user_input}, config=config)
+        
+        model_with_history = RunnableWithMessageHistory(chain, get_session_history, input_messages_key='messages')
+        
+        response = model_with_history.invoke({'messages': user_input}, config)
+        print(response)
+    print(store)
+    return response        
+
+def run():
+    pipeline()
             
 
         
 if __name__ == "__main__":
     # set_log()
     run()
+
 # Streamlit app
 # st.set_page_config(page_title="MlHub", page_icon=None, layout="centered", initial_sidebar_state="auto", menu_items=None)
 # st.title("Multi-Model LLM Question Answering App")
