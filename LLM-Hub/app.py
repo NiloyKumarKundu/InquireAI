@@ -74,7 +74,7 @@ def get_model():
 
 def get_trimmer():
     trimmer = trim_messages(
-        max_tokens=1024,
+        max_tokens=10000,
         strategy="last",
         token_counter=get_model(),
         include_system=True,
