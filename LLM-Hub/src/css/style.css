@@ -1,0 +1,5 @@
+section[data-testid="stSidebar"] div.stButton button {
+  width: 90%;
+  position: absolute;
+  bottom: 0px;
+}
